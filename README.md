@@ -18,13 +18,21 @@ For training, the [KITTI]() Visual Odometry dataset has been used, you can chang
 The structure containing the dataset must agree to the following:
 
 `<path where the dataset has been stored>\dataset`
+
     -->`\poses`
+
         --> `\00.txt`
+
         --> `\01.txt`
+
         ...
+
     -->`\sequences`
+
         --> `\00`
+
         --> `\01`
+        
         ...
 
 ## Prediction
