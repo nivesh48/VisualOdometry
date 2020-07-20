@@ -7,13 +7,25 @@ This repository is an implementation of the following architectures:
 
 The code uses the FlowNetS pre-trained model [FlowNet: Learning Optical Flow with Convolutional Networks](https://ieeexplore.ieee.org/document/7410673).
 
+Inside the `main.py` file is the asdas variable that serves as the configuration for the training.
+
+- `mode` code execution mode, such as to `train` or to `predict`.
+- `datapath` path where the dataset is stored.
+- `bsize` size of batch size.
+- `lr` learning rate value for SGD optimizer.
+- `momentum` momentum value for SGD optimizer.
+- `train_iter` number of epoch for training.
+- `checkpoint_path` path where the checkpoint are stored.
+- `k` default value for loss function.
+- `train` model `deepvo` or `magicvo` to be trained or predicted.
+
 ## Download weights
 
 To download the weights of the models, download and place them in the `checkpoints` folder, where the download instructions are located.
 
 ## Training
 
-For training, the [KITTI]() Visual Odometry dataset has been used, you can change the training sequences in the file `utils/dataset.py`. For example, the following variable `self.sequences = ['00', '02', '08', '09']` has been used for sequences $00$, $02$, $08$ and $09$, which are the most extensive.
+For training, the [KITTI]() Visual Odometry dataset has been used, you can change the training sequences in the file `utils/dataset.py`. For example, the following variable `self.sequences = ['00', '02', '08', '09']` has been used for sequences `00`, `02`, `08` and `09`, which are the most extensive.
 
 The structure containing the dataset must agree to the following:
 
@@ -34,5 +46,21 @@ The structure containing the dataset must agree to the following:
         --> \01
 
         ...
+
+Change the values of the variable `config` for training
+
+`
+config = {
+    'mode': 'train',
+    'datapath': 'D:\EduardoTayupanta\Documents\Librerias\dataset',
+    'bsize': 8,
+    'lr': 0.001,
+    'momentum': 0.99,
+    'train_iter': 20,
+    'checkpoint_path': './checkpoints',
+    'k': 100,
+    'train': 'deepvo'
+}
+`
 
 ## Prediction
