@@ -19,20 +19,20 @@ The structure containing the dataset must agree to the following:
 
 `<path where the dataset has been stored>\dataset`
 
-    -->`\poses`
+    -->\poses
 
-        --> `\00.txt`
+        --> \00.txt
 
-        --> `\01.txt`
+        --> \01.txt
 
         ...
 
-    -->`\sequences`
+    -->\sequences
 
-        --> `\00`
+        --> \00
 
-        --> `\01`
-        
+        --> \01
+
         ...
 
 ## Prediction
