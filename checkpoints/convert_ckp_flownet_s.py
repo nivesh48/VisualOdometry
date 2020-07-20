@@ -1,3 +1,11 @@
+# -*- coding: utf-8 -*-
+"""
+Created by etayupanta at 6/30/2020 - 21:11
+__author__ = 'Eduardo Tayupanta'
+__email__ = 'eduardotayupanta@outlook.com'
+"""
+
+# Import Libraries:
 import os
 import tensorflow as tf
 from tensorflow import keras
@@ -116,4 +124,4 @@ for name_weights, name_biases in zip(weights, biases):
     net.model.layers[i].set_weights(l)
     i += 1
 
-net.model.save('flownet_s.h5')
+net.model.save('checkpoints/flownet_s.h5')

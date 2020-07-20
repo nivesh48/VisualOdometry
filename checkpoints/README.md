@@ -6,7 +6,7 @@ The model was converted from the original FlowNetS model of the repository [Flow
 
 - [FlowNetS](https://drive.google.com/file/d/1z4LCDCfRlWU4QII_82GfU4MPbOt6jJ3E/view?usp=sharing)
 
-Convert `FlowNet2` repository models run the following `flownet_s.py`. Change the variable `path` to its location on your computer
+Convert `FlowNet2` repository models run the following `convert_ckp_flownet_s.py`. Change the variable `path` to its location on your computer.
 
 ## DeepVO
 
