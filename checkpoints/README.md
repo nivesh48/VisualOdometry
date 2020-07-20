@@ -10,7 +10,7 @@ Convert `FlowNet2` repository models run the following `convert_ckp_flownet_s.py
 
 ## DeepVO
 
-- [DeepVO]()
+- [DeepVO]() training with sequences $00$, $02$, $08$ and $09$ for 20 epoch.
 
 ## MagicVO
 
