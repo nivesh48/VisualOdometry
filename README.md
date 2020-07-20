@@ -17,7 +17,7 @@ Inside the `main.py` file is the asdas variable that serves as the configuration
 - `train_iter` number of epoch for training.
 - `checkpoint_path` path where the checkpoint are stored.
 - `k` default value for loss function.
-- `train` model `deepvo` or `magicvo` to be trained or predicted.
+- `train` model `DeepVO` or `MagicVO` to be trained or predicted.
 
 ## Download weights
 
@@ -47,7 +47,7 @@ The structure containing the dataset must agree to the following:
 
         ...
 
-Change the values of the variable `config` for training
+- Run the `main.py` file with changes to the `config` variable for DeepVO model training
 
 `
 config = {
@@ -60,6 +60,22 @@ config = {
     'checkpoint_path': './checkpoints',
     'k': 100,
     'train': 'deepvo'
+}
+`
+
+- Run the `main.py` file with changes to the `config` variable for MagicVO model training
+
+`
+config = {
+    'mode': 'train',
+    'datapath': 'D:\EduardoTayupanta\Documents\Librerias\dataset',
+    'bsize': 8,
+    'lr': 0.001,
+    'momentum': 0.99,
+    'train_iter': 20,
+    'checkpoint_path': './checkpoints',
+    'k': 100,
+    'train': 'magicvo'
 }
 `
 
