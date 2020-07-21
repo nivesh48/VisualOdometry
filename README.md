@@ -12,7 +12,7 @@ Inside the `main.py` file is the asdas variable that serves as the configuration
 - `mode` code execution mode, such as to `train` or to `predict`.
 - `datapath` path where the dataset is stored.
 - `bsize` size of batch size.
-- `lr` learning rate value for SGD optimizer.
+- `lr` learning rate value for SGD and Adagrad optimizer.
 - `momentum` momentum value for SGD optimizer.
 - `train_iter` number of epoch for training.
 - `checkpoint_path` path where the checkpoint are stored.
