@@ -8,25 +8,26 @@ __email__ = 'eduardotayupanta@outlook.com'
 # Import Libraries:
 from DeepVO.deepvo_net import DeepVONet
 from FlowNet.flownet_s_net import FlowNet
+from MagicVO.magicvo_net import MagicVONet
 import matplotlib.pyplot as plt
 import tensorflow as tf
 from utils.dataset import VisualOdometryDataLoader
 
 
 # Custom loss function.
-def custom_loss(y_pred, y_true, k, train, criterion):
-    if train == 'deepvo':
-        mse_position = criterion(y_true[:, :3], y_pred[:, :3])
-        mse_orientation = criterion(y_true[:, 3:], y_pred[:, 3:])
-        return mse_position + k * mse_orientation
+def custom_loss(y_pred, y_true, k, criterion):
+    mse_position = criterion(y_true[:, :3], y_pred[:, :3])
+    mse_orientation = criterion(y_true[:, 3:], y_pred[:, 3:])
+    return mse_position + k * mse_orientation
+        
 
 
-def run_optimization(model, x, y, k, train, criterion, optimizer):
+def run_optimization(model, x, y, k, criterion, optimizer):
     with tf.GradientTape() as g:
         # Forward pass.
         pred = model(x, is_training=True)
         # Compute loss.
-        loss = custom_loss(pred, y, k, train, criterion)
+        loss = custom_loss(pred, y, k, criterion)
 
     # Variables to update, i.e. trainable variables.
     trainable_variables = model.trainable_variables
@@ -49,7 +50,6 @@ def train_model(dataset, flownet, model, config, criterion, optimizer, epoch):
                 flow,
                 batch_y,
                 config['k'],
-                config['train'],
                 criterion,
                 optimizer)
 
@@ -59,7 +59,6 @@ def train_model(dataset, flownet, model, config, criterion, optimizer, epoch):
             pred,
             batch_y,
             config['k'],
-            config['train'],
             criterion
         ).numpy()
 
@@ -73,11 +72,16 @@ def train(flownet, model, config):
         config['datapath'], 384, 1280, config['bsize'])
 
     criterion = tf.keras.losses.MeanSquaredError()
-    optimizer = tf.keras.optimizers.SGD(
-        learning_rate=config['lr'],
-        momentum=config['momentum'],
-        nesterov=True
-    )
+    if config['train'] == 'deepvo':
+        optimizer = tf.keras.optimizers.SGD(
+            learning_rate=config['lr'],
+            momentum=config['momentum'],
+            nesterov=True
+        )
+    elif config['train'] == 'magicvo':
+        optimizer = tf.keras.optimizers.Adagrad(
+            learning_rate=config['lr'],
+        )
 
     print('Training model...')
     total_loss = []
@@ -135,17 +139,18 @@ def main():
 
     deepvonet = DeepVONet()
     flownet = FlowNet()
+    magicvonet = MagicVONet()
 
     if config['mode'] == 'train':
         if config['train'] == 'deepvo':
             train(flownet, deepvonet, config)
         elif config['train'] == 'magicvo':
-            pass
+            train(flownet, magicvonet, config)
     elif config['mode'] == 'test':
         if config['train'] == 'deepvo':
             test(flownet, deepvonet, config)
         elif config['train'] == 'magicvo':
-            pass
+            test(flownet, magicvonet, config)
 
 
 if __name__ == "__main__":
