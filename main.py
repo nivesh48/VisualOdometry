@@ -19,7 +19,6 @@ def custom_loss(y_pred, y_true, k, criterion):
     mse_position = criterion(y_true[:, :3], y_pred[:, :3])
     mse_orientation = criterion(y_true[:, 3:], y_pred[:, 3:])
     return mse_position + k * mse_orientation
-        
 
 
 def run_optimization(model, x, y, k, criterion, optimizer):
@@ -96,7 +95,6 @@ def train(flownet, model, config):
             epoch)
         total_loss.append(loss)
 
-    if config['train'] == 'deepvo':
         model.save_weights(config['checkpoint_path'] +
                            '/' + config['train'] + '/cp.ckpt')
 
@@ -134,7 +132,7 @@ def main():
         'train_iter': 20,
         'checkpoint_path': './checkpoints',
         'k': 100,
-        'train': 'deepvo'
+        'train': 'magicvo'
     }
 
     deepvonet = DeepVONet()

@@ -2,3 +2,10 @@ checkpoints/flownet_s.h5
 DeepVO/__pycache__/deepvo_net.cpython-38.pyc
 FlowNet/__pycache__/flownet_s_net.cpython-38.pyc
 utils/__pycache__/dataset.cpython-38.pyc
+checkpoints/deepvo/checkpoint
+checkpoints/deepvo/cp.ckpt.data-00000-of-00001
+checkpoints/deepvo/cp.ckpt.index
+checkpoints/magicvo/checkpoint
+checkpoints/magicvo/cp.ckpt.data-00000-of-00001
+checkpoints/magicvo/cp.ckpt.index
+MagicVO/__pycache__/magicvo_net.cpython-38.pyc
