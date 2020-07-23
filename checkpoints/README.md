@@ -10,8 +10,8 @@ Convert `FlowNet2` repository models run the following `convert_ckp_flownet_s.py
 
 ## DeepVO
 
-- [DeepVO]() training with sequences `00`, `02`, `08` and `09` for `20` epoch.
+- [DeepVO](https://drive.google.com/drive/folders/16ifG3bHGhcdJ4W_vgTT1w4Lups_wyLBO?usp=sharing) training with sequences `00`, `02`, `08` and `09` for `20` epoch.
 
 ## MagicVO
 
-- [MagicVO]()
+- [MagicVO](https://drive.google.com/drive/folders/1vw9AhsZ6KoGqhfRmQcItpbDRrsjFU5Vt?usp=sharing) training with sequences `00`, `02`, `08` and `09` for `20` epoch.
