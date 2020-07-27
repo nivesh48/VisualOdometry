@@ -6,10 +6,11 @@ __email__ = 'eduardotayupanta@outlook.com'
 """
 
 # Import Libraries:
+import cv2
 from DeepVO.deepvo_net import DeepVONet
-from FlowNet.flownet_s_net import FlowNet
 from MagicVO.magicvo_net import MagicVONet
 import matplotlib.pyplot as plt
+import numpy as np
 import tensorflow as tf
 from utils.dataset import VisualOdometryDataLoader
 
@@ -31,28 +32,26 @@ def run_optimization(model, x, y, k, criterion, optimizer):
     # Variables to update, i.e. trainable variables.
     trainable_variables = model.trainable_variables
 
-    # Compute gradients.
-    gradients = g.gradient(loss, trainable_variables)
+    with tf.device('/cpu:0'):
+        # Compute gradients.
+        gradients = g.gradient(loss, trainable_variables)
 
     # Update W and b following gradients.
     optimizer.apply_gradients(zip(gradients, trainable_variables))
 
 
-def train_model(dataset, flownet, model, config, criterion, optimizer, epoch):
+def train_model(dataset, model, config, criterion, optimizer, epoch):
     loss = 0.0
-    for step, (batch_x, batch_y) in enumerate(dataset.dataset):
-        with tf.device('/gpu:0'):
-            flow = flownet(batch_x)
-        with tf.device('/cpu:0'):
-            run_optimization(
-                model,
-                flow,
-                batch_y,
-                config['k'],
-                criterion,
-                optimizer)
+    for step, (batch_x, batch_y) in enumerate(dataset):
+        run_optimization(
+            model,
+            batch_x,
+            batch_y,
+            config['k'],
+            criterion,
+            optimizer)
 
-            pred = model(flow)
+        pred = model(batch_x)
 
         loss = custom_loss(
             pred,
@@ -65,7 +64,7 @@ def train_model(dataset, flownet, model, config, criterion, optimizer, epoch):
     return loss
 
 
-def train(flownet, model, config):
+def train(model, config):
     print('Load Data...')
     dataset = VisualOdometryDataLoader(
         config['datapath'], 384, 1280, config['bsize'])
@@ -86,8 +85,7 @@ def train(flownet, model, config):
     total_loss = []
     for epoch in range(1, config['train_iter'] + 1):
         loss = train_model(
-            dataset,
-            flownet,
+            dataset.dataset,
             model,
             config,
             criterion,
@@ -110,8 +108,84 @@ def train(flownet, model, config):
     plt.show()
 
 
-def test(flownet, model, config):
-    print(path)
+def decode_img(img):
+    dim = (1280, 384)
+    image = cv2.resize(img, dim, interpolation=cv2.INTER_AREA)
+    image = image.astype('float32')
+    return image
+
+
+def get_input(paths):
+    print(paths)
+    img1 = cv2.imread(paths[0])
+    img2 = cv2.imread(paths[1])
+    img1 = decode_img(img1)
+    img2 = decode_img(img2)
+    return np.concatenate((img1, img2), axis=-1)
+
+
+def test(model, config):
+    print('Load Data...')
+    dataset = VisualOdometryDataLoader(
+        config['datapath'], 384, 1280, config['bsize'], True)
+
+    model.load_weights(config['checkpoint_path'] +
+                       '/' + config['train'] + '/cp.ckpt')
+
+    images_stacked, odometries = dataset.images_stacked, dataset.odometries
+    x, x_pred = 0.0, 0.0
+    y, y_pred = 0.0, 0.0
+    z, z_pred = 0.0, 0.0
+
+    X, X_pred = [], []
+    Y, Y_pred = [], []
+    Z, Z_pred = [], []
+
+    X.append(x)
+    X_pred.append(x_pred)
+
+    Y.append(y)
+    Y_pred.append(y_pred)
+
+    Z.append(z)
+    Z_pred.append(z_pred)
+
+    for index in range(len(odometries)):
+        input_img = get_input(images_stacked[index])
+        pred = model(np.array([input_img])).numpy()[0]
+            
+        x += odometries[index][0]
+        x_pred += pred[0]
+
+        y += odometries[index][1]
+        y_pred += pred[1]
+
+        z += odometries[index][2]
+        z_pred += pred[2]
+
+        X.append(x)
+        X_pred.append(x_pred)
+        Y.append(y)
+        Y_pred.append(y_pred)
+        Z.append(z)
+        Z_pred.append(z_pred)
+
+    print('Plot trajectory...')
+    fig, ax = plt.subplots()
+    ax.plot(X, Y)
+    ax.plot(X_pred, Y_pred)
+    ax.set(xlabel='Distance', ylabel='Distance',
+           title='Comparison ' + config['train'])
+    ax.grid()
+    plt.show()
+
+    # input_img = get_input(images_stacked[0])
+    # pred = model(np.array([input_img])).numpy()[0]
+    # print(odometries[0], pred)
+    # print(odometries[0], pred[0])
+    # print(odometries[0], pred.numpy()[0])
+    # print(odometries[0], pred.numpy()[1])
+    # print(odometries[0], pred.numpy()[2])
 
 
 def main():
@@ -124,7 +198,7 @@ def main():
             print(e)
 
     config = {
-        'mode': 'train',
+        'mode': 'test',
         'datapath': 'D:\EduardoTayupanta\Documents\Librerias\dataset',
         'bsize': 8,
         'lr': 0.001,
@@ -132,23 +206,22 @@ def main():
         'train_iter': 20,
         'checkpoint_path': './checkpoints',
         'k': 100,
-        'train': 'magicvo'
+        'train': 'deepvo'
     }
 
     deepvonet = DeepVONet()
-    flownet = FlowNet()
     magicvonet = MagicVONet()
 
     if config['mode'] == 'train':
         if config['train'] == 'deepvo':
-            train(flownet, deepvonet, config)
+            train(deepvonet, config)
         elif config['train'] == 'magicvo':
-            train(flownet, magicvonet, config)
+            train(magicvonet, config)
     elif config['mode'] == 'test':
         if config['train'] == 'deepvo':
-            test(flownet, deepvonet, config)
+            test(deepvonet, config)
         elif config['train'] == 'magicvo':
-            test(flownet, magicvonet, config)
+            test(magicvonet, config)
 
 
 if __name__ == "__main__":

@@ -31,17 +31,20 @@ class VisualOdometryDataLoader:
 
         images_stacked, odometries = self.get_data()
 
-        dataset = tf.data.Dataset.from_tensor_slices((images_stacked, odometries))
-        dataset = dataset.shuffle(len(images_stacked))
-        dataset = dataset.map(self.load_image, num_parallel_calls=tf.data.experimental.AUTOTUNE)
-        dataset = dataset.batch(batch_size)
-        dataset = dataset.prefetch(tf.data.experimental.AUTOTUNE)
+        if test:
+            self.images_stacked = images_stacked
+            self.odometries = odometries
+        else:
+            dataset = tf.data.Dataset.from_tensor_slices((images_stacked, odometries))
+            dataset = dataset.shuffle(len(images_stacked))
+            dataset = dataset.map(self.load_image, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+            dataset = dataset.batch(batch_size)
+            dataset = dataset.prefetch(tf.data.experimental.AUTOTUNE)
 
-        self.dataset = dataset
+            self.dataset = dataset
 
     def decode_img(self, img):
         image = tf.image.decode_png(img, channels=3)
-        image = image[..., ::-1]
         image = tf.image.convert_image_dtype(image, tf.float32)
         image = tf.image.resize(image, [self.height, self.width])
         return image
