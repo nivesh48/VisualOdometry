@@ -33,6 +33,7 @@ class VisualOdometryDataLoader:
 
         if test:
             dataset = dataset.map(self.load_image, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+            dataset = dataset.batch(batch_size)
         else:
             dataset = dataset.shuffle(len(images_stacked))
             dataset = dataset.map(self.load_image, num_parallel_calls=tf.data.experimental.AUTOTUNE)
@@ -92,6 +93,22 @@ class VisualOdometryDataLoader:
             y = math.atan2(-R[2, 0], sy)
             z = 0
         return np.array([x, y, z], dtype=np.float32)
+
+    def eulerAnglesToRotationMatrix(self, theta):
+        R_x = np.array([[1, 0, 0],
+                        [0, np.cos(theta[0]), -np.sin(theta[0])],
+                        [0, np.sin(theta[0]), np.cos(theta[0])]
+                        ])
+        R_y = np.array([[np.cos(theta[1]), 0, np.sin(theta[1])],
+                        [0, 1, 0],
+                        [-np.sin(theta[1]), 0, np.cos(theta[1])]
+                        ])
+        R_z = np.array([[np.cos(theta[2]), -np.sin(theta[2]), 0],
+                        [np.sin(theta[2]), np.cos(theta[2]), 0],
+                        [0, 0, 1]
+                        ])
+        R = np.dot(R_z, np.dot(R_y, R_x))
+        return R
 
     def get6DoFPose(self, p):
         pos = np.array([p[3], p[7], p[11]])

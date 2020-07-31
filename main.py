@@ -136,7 +136,6 @@ def main():
             print(e)
 
     config = {
-        'mode': 'train',
         'datapath': 'D:\EduardoTayupanta\Documents\Librerias\dataset',
         'bsize': 8,
         'lr': 0.001,
@@ -148,24 +147,15 @@ def main():
 
     flownet = FlowNet()
 
-    if config['mode'] == 'train':
-        if config['train'] == 'deepvo':
-            with tf.device('/cpu:0'):
-                deepvonet = DeepVONet()
-            train(flownet, deepvonet, config)
-        elif config['train'] == 'magicvo':
-            with tf.device('/cpu:0'):
-                magicvonet = MagicVONet()
-            train(flownet, magicvonet, config)
-    elif config['mode'] == 'test':
-        if config['train'] == 'deepvo':
-            with tf.device('/cpu:0'):
-                deepvonet = DeepVONet()
-            test(flownet, deepvonet, config)
-        elif config['train'] == 'magicvo':
-            with tf.device('/cpu:0'):
-                magicvonet = MagicVONet()
-            test(flownet, magicvonet, config)
+    if config['train'] == 'deepvo':
+        with tf.device('/cpu:0'):
+            deepvonet = DeepVONet()
+        train(flownet, deepvonet, config)
+    elif config['train'] == 'magicvo':
+        with tf.device('/cpu:0'):
+            magicvonet = MagicVONet()
+        train(flownet, magicvonet, config)
+
 
 
 if __name__ == "__main__":
