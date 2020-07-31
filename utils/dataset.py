@@ -10,7 +10,6 @@ import math
 import numpy as np
 import os
 import tensorflow as tf
-import matplotlib.pyplot as plt
 
 
 class VisualOdometryDataLoader:
@@ -30,21 +29,21 @@ class VisualOdometryDataLoader:
         self.height = height
 
         images_stacked, odometries = self.get_data()
+        dataset = tf.data.Dataset.from_tensor_slices((images_stacked, odometries))
 
         if test:
-            self.images_stacked = images_stacked
-            self.odometries = odometries
+            dataset = dataset.map(self.load_image, num_parallel_calls=tf.data.experimental.AUTOTUNE)
         else:
-            dataset = tf.data.Dataset.from_tensor_slices((images_stacked, odometries))
             dataset = dataset.shuffle(len(images_stacked))
             dataset = dataset.map(self.load_image, num_parallel_calls=tf.data.experimental.AUTOTUNE)
             dataset = dataset.batch(batch_size)
             dataset = dataset.prefetch(tf.data.experimental.AUTOTUNE)
 
-            self.dataset = dataset
+        self.dataset = dataset
 
     def decode_img(self, img):
         image = tf.image.decode_png(img, channels=3)
+        image = image[..., ::-1]
         image = tf.image.convert_image_dtype(image, tf.float32)
         image = tf.image.resize(image, [self.height, self.width])
         return image
@@ -118,14 +117,11 @@ class VisualOdometryDataLoader:
 
 def main():
     path = "D:\EduardoTayupanta\Documents\Librerias\dataset"
-    dataset = VisualOdometryDataLoader(path, 384, 1280, 32)
+    dataset = VisualOdometryDataLoader(path, 192, 640, 32)
     for element in dataset.dataset.as_numpy_iterator():
         for index in range(len(element[0])):
             img = element[0][index]
-            print(element[1][index])
-            plt.title("Image with shape {}".format(img.shape))
-            _ = plt.imshow(img)
-            plt.show()
+            print(img.shape, img.max(), element[1][index])
 
 
 if __name__ == "__main__":

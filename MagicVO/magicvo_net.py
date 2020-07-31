@@ -17,11 +17,15 @@ class MagicVONet(keras.Model):
         lstm_fw = layers.LSTM(1000)
         lstm_bw = layers.LSTM(1000, go_backwards=True)
         self.bi_lstm = layers.Bidirectional(lstm_fw, backward_layer=lstm_bw)
+        self.dropout_1 = layers.Dropout(0.5)
         self.dense = layers.Dense(256, activation=tf.nn.relu)
+        self.dropout_2 = layers.Dropout(0.5)
         self.out = layers.Dense(6)
 
     def call(self, inputs, **kwargs):
         x = self.bi_lstm(inputs)
+        x = self.dropout_1(x)
         x = self.dense(x)
+        x = self.dropout_2(x)
         x = self.out(x)
         return x

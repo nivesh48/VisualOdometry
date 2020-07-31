@@ -49,7 +49,7 @@ class FlowNetS:
 path = 'D:\EduardoTayupanta\Documents\Librerias\FlowNet\checkpoints\FlowNetS'
 file = 'flownet-S.ckpt-0'
 trained_checkpoint_prefix = os.path.join(path, file)
-net = FlowNetS(384, 1280)
+net = FlowNetS(192, 640)
 
 names = [
     'conv1',
@@ -124,4 +124,4 @@ for name_weights, name_biases in zip(weights, biases):
     net.model.layers[i].set_weights(l)
     i += 1
 
-net.model.save('checkpoints/flownet_s.h5')
+net.model.save('flownet_s.h5')
