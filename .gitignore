@@ -1,3 +1,4 @@
 checkpoints/flownet_s.h5
 /checkpoints/deepvo/
 /checkpoints/magicvo/
+/checkpoints/poseconvgru/

@@ -9,6 +9,7 @@ __email__ = 'eduardotayupanta@outlook.com'
 from FlowNet.flownet_s_net import FlowNet
 from DeepVO.deepvo_net import DeepVONet
 from MagicVO.magicvo_net import MagicVONet
+from PoseConvGRU.poseconvgru_net import PoseConvGRUNet
 import matplotlib.pyplot as plt
 import tensorflow as tf
 from utils.dataset import VisualOdometryDataLoader
@@ -21,108 +22,95 @@ def custom_loss(y_, y, k, criterion):
     return mse_position + k * mse_orientation
 
 
-def loss(model, x, y, k, criterion, training):
+def loss(model, x, y, k, criterion, is_training):
     # training=training is needed only if there are layers with different
     # behavior during training versus inference (e.g. Dropout).
-    y_ = model(x, training=training)
+    y_ = model(x, is_training=is_training)
     return custom_loss(y_, y, k, criterion)
 
 
 def grad(model, inputs, targets, k, criterion):
     with tf.GradientTape() as tape:
-        loss_value = loss(model, inputs, targets, k, criterion, training=True)
+        loss_value = loss(model, inputs, targets, k, criterion, is_training=True)
     return loss_value, tape.gradient(loss_value, model.trainable_variables)
 
 
 def train(flownet, model, config):
     print('Load Data...')
-    dataset = VisualOdometryDataLoader(config['datapath'], 192, 640, config['bsize'])
-    criterion = tf.keras.losses.MeanSquaredError()
-    optimizer = tf.keras.optimizers.Adam(config['lr'])
+    print('=' * 50)
+    train_dataset = VisualOdometryDataLoader(config['datapath'], 192, 640, config['bsize'])
+    val_dataset = VisualOdometryDataLoader(config['datapath'], 192, 640, config['bsize'], val=True)
 
-    print('Training model...')
+    criterion = tf.keras.losses.MeanSquaredError()
+    optimizer = None
+    if config['train'] == 'deepvo':
+        optimizer = tf.keras.optimizers.SGD(config['lr'], 0.9, True)
+    elif config['train'] == 'magicvo':
+        optimizer = tf.keras.optimizers.Adagrad(config['lr'])
+    elif config['train'] == 'poseconvgru':
+        optimizer = tf.keras.optimizers.Adam(config['lr'])
+
+    ckpt = tf.train.Checkpoint(step=tf.Variable(1), optimizer=optimizer, net=model)
+    manager = tf.train.CheckpointManager(ckpt, config['checkpoint_path'] + '/' + config['train'], max_to_keep=3)
+    ckpt.restore(manager.latest_checkpoint)
+    if manager.latest_checkpoint:
+        print("Restored from {}".format(manager.latest_checkpoint))
+    else:
+        print("Initializing from scratch.")
+    print('=' * 50)
+
+    print('Training model {}...'.format(config['train'].upper()))
+    print('=' * 50)
     train_loss_results = []
+    val_loss_results = []
     for epoch in range(1, config['train_iter'] + 1):
-        epoch_loss_avg = tf.keras.metrics.Mean()
-        for step, (batch_x, batch_y) in enumerate(dataset.dataset):
+        epoch_train_loss_avg = tf.keras.metrics.Mean()
+        epoch_val_loss_avg = tf.keras.metrics.Mean()
+
+        print('[=', end='')
+        for step, (batch_x, batch_y) in enumerate(train_dataset.dataset):
             with tf.device('/gpu:0'):
                 x = flownet(batch_x)
             with tf.device('/cpu:0'):
                 # Optimize the model
                 loss_value, grads = grad(model, x, batch_y, config['k'], criterion)
                 optimizer.apply_gradients(zip(grads, model.trainable_variables))
-            epoch_loss_avg.update_state(loss_value)
-            print('Epoch {:03d}, \tStep {:04d}, \tLoss {:.3f}'.format(epoch, step, loss_value))
-        train_loss_results.append(epoch_loss_avg.result())
-        print('Epoch {:03d}, \tLoss: {:.3f}'.format(epoch, epoch_loss_avg.result()))
-        model.save_weights(config['checkpoint_path'] + '/' + config['train'] + '/cp.ckpt')
+            epoch_train_loss_avg.update_state(loss_value)
+
+        print('=', end='')
+        for step, (batch_x, batch_y) in enumerate(val_dataset.dataset):
+            with tf.device('/gpu:0'):
+                x = flownet(batch_x)
+            with tf.device('/cpu:0'):
+                loss_value = loss(model, x, batch_y, config['k'], criterion, is_training=False)
+            epoch_val_loss_avg.update_state(loss_value)
+
+        train_loss_results.append(epoch_train_loss_avg.result())
+        val_loss_results.append(epoch_val_loss_avg.result())
+
+        ckpt.step.assign_add(1)
+        if int(ckpt.step) % 10 == 0:
+            save_path = manager.save()
+            print('=' * 50)
+            print("Saved checkpoint for step {}: {}".format(int(ckpt.step), save_path))
+            print("Training Loss: {:.10f} \tValidation Loss: {:.10f}".format(epoch_train_loss_avg.result(),
+                                                                             epoch_val_loss_avg.result()))
+            print('=' * 50)
+        else:
+            print('] Epoch {:03d}, \tTraining Loss: {:.10f}, \tValidation Loss: {:.10f}'.format(epoch,
+                                                                                                epoch_train_loss_avg.result(),
+                                                                                                epoch_val_loss_avg.result()))
 
     print('Plot loss...')
+    print('=' * 50)
     fig, ax = plt.subplots()
-    ax.plot(train_loss_results)
+    ax.plot(train_loss_results, 'b--', label='Training')
+    ax.plot(val_loss_results, 'r', label='Validation')
 
-    ax.set(xlabel='Epoch', ylabel='Loss', title='Training Metrics ' + config['train'])
+    ax.set(xlabel='Epoch', ylabel='Loss', title='Training Metrics -' + config['train'].upper())
     ax.grid()
 
     fig.savefig('loss_' + config['train'] + '.png')
-    plt.show()
-
-
-def test(flownet, model, config):
-    print('Load Data...')
-    dataset = VisualOdometryDataLoader(config['datapath'], 192, 640, config['bsize'], True)
-
-    model.load_weights(config['checkpoint_path'] + '/' + config['train'] + '/cp.ckpt')
-
-    x, x_pred = 0.0, 0.0
-    y, y_pred = 0.0, 0.0
-    z, z_pred = 0.0, 0.0
-
-    X, X_pred = [], []
-    Y, Y_pred = [], []
-    Z, Z_pred = [], []
-
-    X.append(x)
-    X_pred.append(x_pred)
-
-    Y.append(y)
-    Y_pred.append(y_pred)
-
-    Z.append(z)
-    Z_pred.append(z_pred)
-
-    for step, (input_img, y_true) in enumerate(dataset.dataset):
-        print('Sequence: ' + str(step))
-        with tf.device('/gpu:0'):
-            flow = flownet(tf.expand_dims(input_img, 0))
-        with tf.device('/cpu:0'):
-            pred = model(flow).numpy()[0]
-        y_true = y_true.numpy()
-
-        x += y_true[0]
-        x_pred += pred[0]
-
-        y += y_true[1]
-        y_pred += pred[1]
-
-        z += y_true[2]
-        z_pred += pred[2]
-
-        X.append(x)
-        X_pred.append(x_pred)
-        Y.append(y)
-        Y_pred.append(y_pred)
-        Z.append(z)
-        Z_pred.append(z_pred)
-
-    print('Plot trajectory...')
-    fig, ax = plt.subplots()
-    ax.plot(X, Y)
-    ax.plot(X_pred, Y_pred)
-    ax.set(
-        xlabel='Distance', ylabel='Distance',
-        title='Comparison ' + config['train'])
-    ax.grid()
     plt.show()
 
 
@@ -138,11 +126,12 @@ def main():
     config = {
         'datapath': 'D:\EduardoTayupanta\Documents\Librerias\dataset',
         'bsize': 8,
-        'lr': 0.001,
+        # 'lr': 0.001,
+        'lr': 0.0001,
         'train_iter': 200,
         'checkpoint_path': './checkpoints',
         'k': 100,
-        'train': 'deepvo'
+        'train': 'poseconvgru'
     }
 
     flownet = FlowNet()
@@ -155,7 +144,10 @@ def main():
         with tf.device('/cpu:0'):
             magicvonet = MagicVONet()
         train(flownet, magicvonet, config)
-
+    elif config['train'] == 'poseconvgru':
+        with tf.device('/cpu:0'):
+            poseconvgru = PoseConvGRUNet()
+        train(flownet, poseconvgru, config)
 
 
 if __name__ == "__main__":

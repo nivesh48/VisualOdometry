@@ -12,10 +12,8 @@ from tensorflow import keras
 class FlowNet(keras.Model):
     def __init__(self):
         super(FlowNet, self).__init__()
-        self.flownet = keras.models.load_model('checkpoints/flownet_s.h5')
-        self.reshape = keras.layers.Reshape((-1, 10 * 3 * 1024))
+        self.flow_net = keras.models.load_model('checkpoints/flownet_s.h5')
 
     def call(self, inputs, **kwargs):
-        x = self.flownet(inputs)
-        x = self.reshape(x)
+        x = self.flow_net(inputs)
         return x

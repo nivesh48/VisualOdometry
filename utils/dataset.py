@@ -13,14 +13,14 @@ import tensorflow as tf
 
 
 class VisualOdometryDataLoader:
-    def __init__(self, datapath, height, width, batch_size, test=False):
+    def __init__(self, datapath, height, width, batch_size, test=False, val=False, sequence_test='01'):
         self.base_path = datapath
-        if test:
-            self.sequences = ['01']
+        if test or val:
+            self.sequences = [sequence_test]
         else:
             # self.sequences = ['00', '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21']
             # self.sequences = ['00', '01', '02', '03', '04', '05', '06', '07', '08', '09', '10']
-            self.sequences = ['00', '02', '08', '09']
+            self.sequences = ['00', '02', '04', '06', '08', '10']
 
         self.size = 0
         self.sizes = []
@@ -110,11 +110,8 @@ class VisualOdometryDataLoader:
         R = np.dot(R_z, np.dot(R_y, R_x))
         return R
 
-    def get6DoFPose(self, p):
-        pos = np.array([p[3], p[7], p[11]])
-        R = np.array([[p[0], p[1], p[2]], [p[4], p[5], p[6]], [p[8], p[9], p[10]]])
-        angles = self.rotationMatrixToEulerAngles(R)
-        return np.concatenate((pos, angles))
+    def matrix_rt(self, p):
+        return np.vstack([np.reshape(p.astype(np.float32), (3, 4)), [[0., 0., 0., 1.]]])
 
     def get_data(self):
         images_paths = []
@@ -122,10 +119,13 @@ class VisualOdometryDataLoader:
         for index, sequence in enumerate(self.sequences):
             for i in range(self.sizes[index] - 1):
                 images_paths.append([self.get_image_paths(sequence, i), self.get_image_paths(sequence, i + 1)])
-                pose1 = self.get6DoFPose(self.poses[index][i])
-                pose2 = self.get6DoFPose(self.poses[index][i + 1])
-                odom = pose2 - pose1
-                odometries.append(odom)
+                pose1 = self.matrix_rt(self.poses[index][i])
+                pose2 = self.matrix_rt(self.poses[index][i + 1])
+                pose2wrt1 = np.dot(np.linalg.inv(pose1), pose2)
+                R = pose2wrt1[0:3, 0:3]
+                t = pose2wrt1[0:3, 3]
+                angles = self.rotationMatrixToEulerAngles(R)
+                odometries.append(np.concatenate((t, angles)))
         return np.array(images_paths), np.array(odometries)
 
     def __len__(self):
