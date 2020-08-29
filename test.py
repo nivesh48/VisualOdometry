@@ -123,7 +123,7 @@ def main():
         # 'lr': 0.0001, # poseconvgru
         'checkpoint_path': './checkpoints',
         'test': 'magicvo',
-        'sequence': '03'
+        'sequence': '07'
     }
 
     flownet = FlowNet()
