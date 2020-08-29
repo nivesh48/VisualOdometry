@@ -126,12 +126,12 @@ def main():
     config = {
         'datapath': 'D:\EduardoTayupanta\Documents\Librerias\dataset',
         'bsize': 8,
-        # 'lr': 0.001,
-        'lr': 0.0001,
+        'lr': 0.001,
+        # 'lr': 0.0001,
         'train_iter': 200,
         'checkpoint_path': './checkpoints',
         'k': 100,
-        'train': 'poseconvgru'
+        'train': 'deepvo'
     }
 
     flownet = FlowNet()

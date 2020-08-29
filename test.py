@@ -122,7 +122,7 @@ def main():
         'lr': 0.001,  # deepvo - magicvo
         # 'lr': 0.0001, # poseconvgru
         'checkpoint_path': './checkpoints',
-        'test': 'deepvo',
+        'test': 'magicvo',
         'sequence': '03'
     }
 
