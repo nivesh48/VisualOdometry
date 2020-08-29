@@ -6,6 +6,7 @@ __email__ = 'eduardotayupanta@outlook.com'
 """
 
 # Import Libraries:
+import math
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -58,7 +59,42 @@ def error(axe, i, abs_error, title, method, colors, c, descriptions, d):
 
 
 def calculate_rmse(y_true, y_pred):
-    return np.sqrt(np.mean(np.square((y_true - y_pred) / y_true)))
+    return np.sqrt(np.mean(np.square(y_true - y_pred)))
+
+
+def isRotationMatrix(R):
+    Rt = np.transpose(R)
+    shouldBeIdentity = np.dot(Rt, R)
+    I = np.identity(3, dtype=R.dtype)
+    n = np.linalg.norm(I - shouldBeIdentity)
+    return n < 1e-6
+
+
+def rotationMatrixToEulerAngles(R):
+    # assert (isRotationMatrix(R))
+    sy = math.sqrt(R[0, 0] * R[0, 0] + R[1, 0] * R[1, 0])
+    singular = sy < 1e-6
+
+    if not singular:
+        x = math.atan2(R[2, 1], R[2, 2])
+        y = math.atan2(-R[2, 0], sy)
+        z = math.atan2(R[1, 0], R[0, 0])
+    else:
+        x = math.atan2(-R[1, 2], R[1, 1])
+        y = math.atan2(-R[2, 0], sy)
+        z = 0
+    return np.array([x, y, z], dtype=np.float32)
+
+
+def translational_rotational(Rt):
+    values = []
+    for element in Rt[1:]:
+        rt = element.reshape((3, 4))
+        R = rt[:, 0:3]
+        angles = rotationMatrixToEulerAngles(R)
+        t = rt[:, 3]
+        values.append([t[0], t[1], t[2], angles[0], angles[1], angles[2]])
+    return np.array(values, dtype=np.float32)
 
 
 def visualizer(config):
@@ -67,10 +103,15 @@ def visualizer(config):
     magicvo = np.load('output/magicvo_' + config['sequence'] + '_Estimated.npy')
     poseconvgru = np.load('output/poseconvgru_' + config['sequence'] + '_Estimated.npy')
 
-    gt_rt = np.array([[1, 2, 3, 4, 5, 6], [1.5, 2.5, 3.5, 4.5, 5.5, 6.5]])
-    deepvo_rt = np.array([[1.1, 2.1, 3.1, 4.1, 5.1, 6.1], [1.2, 2.2, 3.2, 4.2, 5.2, 6.2]])
-    magicvo_rt = np.array([[0.5, 1.5, 2.5, 3.5, 4.5, 5.5], [1.2, 2.2, 3.2, 4.2, 5.2, 6.2]])
-    poseconvgru_rt = np.array([[0.9, 1.9, 2.9, 3.9, 4.9, 5.9], [1.2, 2.2, 3.2, 4.2, 5.2, 6.2]])
+    rp_gt_rt = np.load('output/' + config['sequence'] + '_RelativePoseGroundTruth.npy')
+    rp_deepvo_rt = np.load('output/deepvo_' + config['sequence'] + '_RelativePoseEstimated.npy')
+    rp_magicvo_rt = np.load('output/magicvo_' + config['sequence'] + '_RelativePoseEstimated.npy')
+    rp_poseconvgru_rt = np.load('output/poseconvgru_' + config['sequence'] + '_RelativePoseEstimated.npy')
+
+    gt_rt = translational_rotational(rp_gt_rt)
+    deepvo_rt = translational_rotational(rp_deepvo_rt)
+    magicvo_rt = translational_rotational(rp_magicvo_rt)
+    poseconvgru_rt = translational_rotational(rp_poseconvgru_rt)
 
     # Plot the estimated and groundtruth trajectories
     x_gt = gtCameraTraj[:, 0]
@@ -201,7 +242,7 @@ def visualizer(config):
 
 def main():
     config = {
-        'sequence': '07'
+        'sequence': '03'
     }
     visualizer(config)
 

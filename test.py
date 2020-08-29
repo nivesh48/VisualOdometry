@@ -55,8 +55,8 @@ def test(flownet, model, config):
     estimatedFrame = 0
     gtFrame = 0
 
-    relative_pose_gt = np.empty([len(dataset) + 1, 6])
-    relative_pose_est = np.empty([len(dataset) + 1, 6])
+    relative_pose_gt = np.empty([len(dataset) + 1, 12])
+    relative_pose_est = np.empty([len(dataset) + 1, 12])
 
     for step, (batch_x, batch_y) in enumerate(dataset.dataset):
         print('Sequence: ' + str(step))
@@ -66,7 +66,6 @@ def test(flownet, model, config):
             batch_predict_pose = model(flow)
 
         for pred in batch_predict_pose.numpy():
-            relative_pose_est[estimatedFrame + 1] = pred
             R = dataset.eulerAnglesToRotationMatrix(pred[3:])
             t = pred[:3].reshape(3, 1)
             T_r = np.concatenate((np.concatenate([R, t], axis=1), [[0.0, 0.0, 0.0, 1.0]]), axis=0)
@@ -78,10 +77,10 @@ def test(flownet, model, config):
 
             # Get the origin of the frame (i+1), ie the camera center
             estimatedCameraTraj[estimatedFrame + 1] = np.transpose(T[0:3, 3])
+            relative_pose_est[estimatedFrame + 1] = T[0:3, :].flatten()
             estimatedFrame += 1
 
         for gt in batch_y.numpy():
-            relative_pose_gt[gtFrame + 1] = gt
             R = dataset.eulerAnglesToRotationMatrix(gt[3:])
             t = gt[:3].reshape(3, 1)
             gtT_r = np.concatenate((np.concatenate([R, t], axis=1), [[0.0, 0.0, 0.0, 1.0]]), axis=0)
@@ -93,6 +92,7 @@ def test(flownet, model, config):
 
             # Get the origin of the frame (i+1), ie the camera center
             gtCameraTraj[gtFrame + 1] = np.transpose(gtT[0:3, 3])
+            relative_pose_gt[gtFrame + 1] = gtT[0:3, :].flatten()
             gtFrame += 1
 
     np.save('output/' + config['sequence'] + '_GroundTruth.npy', gtCameraTraj)
