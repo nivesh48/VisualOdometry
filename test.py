@@ -55,6 +55,9 @@ def test(flownet, model, config):
     estimatedFrame = 0
     gtFrame = 0
 
+    relative_pose_gt = np.empty([len(dataset) + 1, 6])
+    relative_pose_est = np.empty([len(dataset) + 1, 6])
+
     for step, (batch_x, batch_y) in enumerate(dataset.dataset):
         print('Sequence: ' + str(step))
         with tf.device('/gpu:0'):
@@ -63,6 +66,7 @@ def test(flownet, model, config):
             batch_predict_pose = model(flow)
 
         for pred in batch_predict_pose.numpy():
+            relative_pose_est[estimatedFrame + 1] = pred
             R = dataset.eulerAnglesToRotationMatrix(pred[3:])
             t = pred[:3].reshape(3, 1)
             T_r = np.concatenate((np.concatenate([R, t], axis=1), [[0.0, 0.0, 0.0, 1.0]]), axis=0)
@@ -77,6 +81,7 @@ def test(flownet, model, config):
             estimatedFrame += 1
 
         for gt in batch_y.numpy():
+            relative_pose_gt[gtFrame + 1] = gt
             R = dataset.eulerAnglesToRotationMatrix(gt[3:])
             t = gt[:3].reshape(3, 1)
             gtT_r = np.concatenate((np.concatenate([R, t], axis=1), [[0.0, 0.0, 0.0, 1.0]]), axis=0)
@@ -92,6 +97,9 @@ def test(flownet, model, config):
 
     np.save('output/' + config['sequence'] + '_GroundTruth.npy', gtCameraTraj)
     np.save('output/' + config['test'] + '_' + config['sequence'] + '_Estimated.npy', estimatedCameraTraj)
+
+    np.save('output/' + config['sequence'] + '_RelativePoseGroundTruth.npy', relative_pose_gt)
+    np.save('output/' + config['test'] + '_' + config['sequence'] + '_RelativePoseEstimated.npy', relative_pose_est)
 
     # Plot the estimated and groundtruth trajectories
     x_gt = gtCameraTraj[:, 0]
@@ -120,10 +128,10 @@ def main():
         'datapath': 'D:\EduardoTayupanta\Documents\Librerias\dataset',
         'bsize': 8,
         'lr': 0.001,  # deepvo - magicvo
-        # 'lr': 0.0001, # poseconvgru
+        # 'lr': 0.0001,  # poseconvgru
         'checkpoint_path': './checkpoints',
-        'test': 'magicvo',
-        'sequence': '07'
+        'test': 'deepvo',
+        'sequence': '03'
     }
 
     flownet = FlowNet()
