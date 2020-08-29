@@ -201,7 +201,7 @@ def visualizer(config):
 
 def main():
     config = {
-        'sequence': '05'
+        'sequence': '07'
     }
     visualizer(config)
 
