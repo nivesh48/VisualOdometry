@@ -89,8 +89,7 @@ for name in names:
 
 loaded_graph = tf.Graph()
 with tf.compat.v1.Session(graph=loaded_graph) as sess:
-    loader = tf.compat.v1.train.import_meta_graph(
-        trained_checkpoint_prefix + '.meta')
+    loader = tf.compat.v1.train.import_meta_graph(trained_checkpoint_prefix + '.meta')
     loader.restore(sess, trained_checkpoint_prefix)
 
     variables_names = [v.name for v in tf.compat.v1.trainable_variables()]

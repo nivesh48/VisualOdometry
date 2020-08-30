@@ -26,6 +26,17 @@ def plot_route(ax, x_gt, z_gt, x_est, z_est, method, sequence):
     plt.show()
 
 
+def plot_one_route(ax, x_gt, z_gt, sequence):
+    ax.scatter(x_gt[0], z_gt[0], label='Sequence start', marker='s', color='k')
+    ax.plot(x_gt, z_gt, 'k', label='Ground truth', linewidth=2.5)
+    ax.legend(loc='upper left', fontsize='x-large')
+    ax.grid(b=True, which='major', color='#666666', linestyle='-')
+    ax.minorticks_on()
+    ax.grid(b=True, which='minor', color='#999999', linestyle='-', alpha=0.2)
+    ax.set_title('Sequence ' + sequence, fontdict={'fontsize': 20})
+    plt.show()
+
+
 def comparison(ax, x_gt, z_gt, x_est, z_est, title, method):
     ax.scatter(x_gt[0], z_gt[0], label='Sequence start', marker='s', color='k')
     ax.plot(x_gt, z_gt, 'k', label='Ground truth', linewidth=2.5)
@@ -240,11 +251,23 @@ def visualizer(config):
     print(rmse)
 
 
+def visualizer_gt(config):
+    gtCameraTraj = np.load('output/' + config['sequence'] + '_GroundTruth.npy')
+    x_gt = gtCameraTraj[:, 0]
+    z_gt = gtCameraTraj[:, 2]
+
+    fig, ax = plt.subplots(1, figsize=(12, 12))
+    plot_one_route(ax,
+               x_gt, z_gt,
+               config['sequence'])
+
+
 def main():
     config = {
-        'sequence': '03'
+        'sequence': '10'
     }
-    visualizer(config)
+    # visualizer(config)
+    visualizer_gt(config)
 
 
 if __name__ == "__main__":
