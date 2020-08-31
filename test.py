@@ -13,6 +13,7 @@ from PoseConvGRU.poseconvgru_net import PoseConvGRUNet
 import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
+from time import time
 from utils.dataset import VisualOdometryDataLoader
 
 
@@ -60,10 +61,17 @@ def test(flownet, model, config):
 
     for step, (batch_x, batch_y) in enumerate(dataset.dataset):
         print('Sequence: ' + str(step))
+        time_flownet_start = time()
+        time_model_start = time()
         with tf.device('/gpu:0'):
             flow = flownet(batch_x)
+        time_flownet_end = time()
         with tf.device('/cpu:0'):
             batch_predict_pose = model(flow)
+        time_model_end = time()
+
+        print('Inference time FlowNet: {:.10f} [s]'.format(time_flownet_end - time_flownet_start))
+        print('Inference time {}: {:.10f} [s]'.format(config['test'].upper(), time_model_end - time_model_start))
 
         for pred in batch_predict_pose.numpy():
             R = dataset.eulerAnglesToRotationMatrix(pred[3:])
