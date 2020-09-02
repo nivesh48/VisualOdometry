@@ -264,10 +264,10 @@ def visualizer_gt(config):
 
 def main():
     config = {
-        'sequence': '10'
+        'sequence': '03'
     }
-    # visualizer(config)
-    visualizer_gt(config)
+    visualizer(config)
+    # visualizer_gt(config)
 
 
 if __name__ == "__main__":
