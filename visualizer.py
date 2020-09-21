@@ -12,17 +12,17 @@ import numpy as np
 import pandas as pd
 
 
-def plot_route(ax, x_gt, z_gt, x_est, z_est, method, sequence):
+def plot_route(ax, x_gt, z_gt, x_est, z_est, method, sequence, color, description):
     ax.scatter(x_gt[0], z_gt[0], label='Sequence start', marker='s', color='k')
     ax.plot(x_gt, z_gt, 'k', label='Ground truth', linewidth=2.5)
-    colors = ['b', 'g', 'm', 'y', 'r']
-    c = np.random.choice(len(colors), size=1, replace=False)
-    ax.plot(x_est, z_est, colors[c[0]] + '' + '-.', label=method, linewidth=3.5)
+    ax.plot(x_est, z_est, color + '' + description, label=method, linewidth=3.5)
     ax.legend(loc='upper left', fontsize='x-large')
     ax.grid(b=True, which='major', color='#666666', linestyle='-')
     ax.minorticks_on()
     ax.grid(b=True, which='minor', color='#999999', linestyle='-', alpha=0.2)
     ax.set_title('Visual Odometry - Sequence ' + sequence, fontdict={'fontsize': 20})
+    ax.set_xlabel('X[m]', fontdict={'fontsize': 16})
+    ax.set_ylabel('Z[m]', fontdict={'fontsize': 16})
     plt.show()
 
 
@@ -34,39 +34,41 @@ def plot_one_route(ax, x_gt, z_gt, sequence):
     ax.minorticks_on()
     ax.grid(b=True, which='minor', color='#999999', linestyle='-', alpha=0.2)
     ax.set_title('Sequence ' + sequence, fontdict={'fontsize': 20})
+    ax.set_xlabel('X[m]', fontdict={'fontsize': 16})
+    ax.set_ylabel('Z[m]', fontdict={'fontsize': 16})
     plt.show()
 
 
-def comparison(ax, x_gt, z_gt, x_est, z_est, title, method):
+def comparison(ax, x_gt, z_gt, x_est, z_est, title, method, colors, descriptions):
     ax.scatter(x_gt[0], z_gt[0], label='Sequence start', marker='s', color='k')
     ax.plot(x_gt, z_gt, 'k', label='Ground truth', linewidth=2.5)
     index = 0
-    colors = ['b', 'g', 'm', 'y', 'r']
-    descriptions = ['--', '-.', ':']
-    c = np.random.choice(len(colors), size=len(method), replace=False)
-    d = np.random.choice(len(descriptions), size=len(method), replace=False)
     for x, y in zip(x_est, z_est):
-        ax.plot(x, y, colors[c[index]] + '' + descriptions[d[index]], label=method[index], linewidth=3.5)
+        ax.plot(x, y, colors[index] + '' + descriptions[index], label=method[index], linewidth=3.5)
         index += 1
     ax.legend(loc='upper left', fontsize='x-large')
     ax.grid(b=True, which='major', color='#666666', linestyle='-')
     ax.minorticks_on()
     ax.grid(b=True, which='minor', color='#999999', linestyle='-', alpha=0.2)
     ax.set_title(title, fontdict={'fontsize': 20})
+    ax.set_xlabel('X[m]', fontdict={'fontsize': 16})
+    ax.set_ylabel('Z[m]', fontdict={'fontsize': 16})
     plt.show()
 
 
-def error(axe, i, abs_error, title, method, colors, c, descriptions, d):
+def error(axe, i, abs_error, title, method, colors, descriptions, ylabel):
     ax = axe[i]
     index = 0
     for abs_error in abs_error:
-        ax.plot(abs_error, colors[c[index]] + '' + descriptions[d[index]], label=method[index], linewidth=3.5)
+        ax.plot(abs_error, colors[index] + '' + descriptions[index], label=method[index], linewidth=3.5)
         index += 1
     ax.legend(loc='upper left', fontsize='x-large')
     ax.grid(b=True, which='major', color='#666666', linestyle='-')
     ax.minorticks_on()
     ax.grid(b=True, which='minor', color='#999999', linestyle='-', alpha=0.2)
     ax.set_title(title, fontdict={'fontsize': 20})
+    ax.set_xlabel('Example', fontdict={'fontsize': 16})
+    ax.set_ylabel(ylabel, fontdict={'fontsize': 16})
 
 
 def calculate_rmse(y_true, y_pred):
@@ -136,27 +138,35 @@ def visualizer(config):
 
     x_poseconvgru = poseconvgru[:, 0]
     z_poseconvgru = poseconvgru[:, 2]
+    colors = ['b', 'y', 'r']
+    descriptions = ['--', '-.', ':']
 
     fig, ax = plt.subplots(1, figsize=(12, 12))
     plot_route(ax,
                x_gt, z_gt,
                x_deepvo, z_deepvo,
                'DeepVO',
-               config['sequence'])
+               config['sequence'],
+               colors[0],
+               descriptions[0])
 
     fig, ax = plt.subplots(1, figsize=(12, 12))
     plot_route(ax,
                x_gt, z_gt,
                x_magicvo, z_magicvo,
                'MagicVO',
-               config['sequence'])
+               config['sequence'],
+               colors[1],
+               descriptions[1])
 
     fig, ax = plt.subplots(1, figsize=(12, 12))
     plot_route(ax,
                x_gt, z_gt,
                x_poseconvgru, z_poseconvgru,
                'PoseConvGRU',
-               config['sequence'])
+               config['sequence'],
+               colors[2],
+               descriptions[2])
 
     x_est = [x_deepvo, x_magicvo, x_poseconvgru]
     z_est = [z_deepvo, z_magicvo, z_poseconvgru]
@@ -165,11 +175,13 @@ def visualizer(config):
                x_gt, z_gt,
                x_est, z_est,
                'Visual Odometry / Sequence ' + config['sequence'],
-               ['DeepVO', 'MagicVO', 'PoseConvGRU'])
+               ['DeepVO', 'MagicVO', 'PoseConvGRU'],
+               colors,
+               descriptions)
 
-    abs_error_deepvo = abs(gt_rt - deepvo_rt)
-    abs_error_magicvo = abs(gt_rt - magicvo_rt)
-    abs_error_poseconvgru = abs(gt_rt - poseconvgru_rt)
+    abs_error_deepvo = gt_rt - deepvo_rt
+    abs_error_magicvo = gt_rt - magicvo_rt
+    abs_error_poseconvgru = gt_rt - poseconvgru_rt
 
     x_abs_error = [abs_error_deepvo[:, 0], abs_error_magicvo[:, 0], abs_error_poseconvgru[:, 0]]
     y_abs_error = [abs_error_deepvo[:, 1], abs_error_magicvo[:, 1], abs_error_poseconvgru[:, 1]]
@@ -182,31 +194,30 @@ def visualizer(config):
     fig, ax = plt.subplots(1, 3, figsize=(36, 12))
     fig.suptitle('Absolut Error / Translational - Sequence ' + config['sequence'], fontsize=24)
     method = ['DeepVO', 'MagicVO', 'PoseConvGRU']
-    colors = ['b', 'g', 'm', 'y', 'r']
-    descriptions = ['--', '-.', ':']
-    c = np.random.choice(len(colors), size=len(method), replace=False)
-    d = np.random.choice(len(descriptions), size=len(method), replace=False)
     error(ax,
           0,
           x_abs_error,
           'X',
           method,
-          colors, c,
-          descriptions, d)
+          colors,
+          descriptions,
+          'Error [m]')
     error(ax,
           1,
           y_abs_error,
           'Y',
           method,
-          colors, c,
-          descriptions, d)
+          colors,
+          descriptions,
+          'Error [m]')
     error(ax,
           2,
           z_abs_error,
           'Z',
           method,
-          colors, c,
-          descriptions, d)
+          colors,
+          descriptions,
+          'Error [m]')
     plt.show()
 
     fig, ax = plt.subplots(1, 3, figsize=(36, 12))
@@ -216,22 +227,25 @@ def visualizer(config):
           roll_abs_error,
           'Roll',
           method,
-          colors, c,
-          descriptions, d)
+          colors,
+          descriptions,
+          'Error [rad]')
     error(ax,
           1,
           pitch_abs_error,
           'Pitch',
           method,
-          colors, c,
-          descriptions, d)
+          colors,
+          descriptions,
+          'Error [rad]')
     error(ax,
           2,
           yaw_abs_error,
           'Yaw',
           method,
-          colors, c,
-          descriptions, d)
+          colors,
+          descriptions,
+          'Error [rad]')
     plt.show()
 
     t_rmse_deepvo = calculate_rmse(gt_rt[:, :3], deepvo_rt[:, :3])
@@ -258,8 +272,8 @@ def visualizer_gt(config):
 
     fig, ax = plt.subplots(1, figsize=(12, 12))
     plot_one_route(ax,
-               x_gt, z_gt,
-               config['sequence'])
+                   x_gt, z_gt,
+                   config['sequence'])
 
 
 def main():
